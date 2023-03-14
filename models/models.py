@@ -13,7 +13,7 @@ JSON_PLAY_FILENAME = "data/players.json"
 JSON_PLAY_COPY_FILENAME = "data/players_copy.json"
 JSON_TOUR_FILENAME = "data/tournaments.json"
 JSON_TOUR_COPY_FILENAME = "data/tournaments_copy.json"
-
+JSON_TOUR_ID_FILENAME = "data/tournaments_id_ref.json"
 
 def obj_dict(obj):
     return obj.__dict__
@@ -296,3 +296,60 @@ class Tournament:
             copymode(JSON_TOUR_FILENAME, JSON_TOUR_COPY_FILENAME)
             os.remove(JSON_TOUR_FILENAME)
             os.rename(JSON_TOUR_COPY_FILENAME, JSON_TOUR_FILENAME)
+
+
+class Json2Object:
+    def tournament(self, tournament_id):
+        with open(JSON_TOUR_FILENAME, "r") as file_json:
+            for json_line in file_json:
+                tournament_json = json.loads(json_line)
+                if tournament_json["tournament_id"] == tournament_id:
+                    # get the information from the file
+                    name = tournament_json["name"]
+                    location = tournament_json["location"]
+                    start_date = tournament_json["start_date"]
+                    end_date = tournament_json["end_date"]
+                    number_of_rounds = tournament_json["number_of_rounds"]
+                    description = tournament_json["description"]
+
+                    # use the information to create an instance of tournament
+                    tournament = Tournament(
+                        tournament_id,
+                        name,
+                        location,
+                        start_date,
+                        end_date,
+                        number_of_rounds,
+                        description,
+                    )
+
+                    tournament.current_round = tournament_json["current_round"]
+
+                    if tournament_json["rounds"] == []:
+                        tournament.rounds = []
+                    else:
+                        for round_json in tournament_json["rounds"]:
+                            round = Round(round_json["name"])
+                            round.start_date = round_json["start_date"]
+                            round.end_date = round_json["end_date"]
+                            for game_json in round_json["games"]:
+                                players_data = []
+                                for key in game_json["result"]:
+                                    players_data.append(key)
+                                    players_data.append(
+                                        game_json["result"][key]
+                                    )
+                                game = Game(players_data[0], players_data[2])
+                                game.result[players_data[0]] = players_data[1]
+                                game.result[players_data[2]] = players_data[3]
+                                round.games.append(game)
+                            tournament.rounds.append(round)
+
+                    if tournament_json["ranking"] == []:
+                        tournament.ranking = []
+                    else:
+                        for rank_json in tournament_json["ranking"]:
+                            rank = PlayerRank(rank_json["national_chess_id"])
+                            rank.update_score(rank_json["total_score"])
+                            tournament.ranking.append(rank)
+                    return tournament
