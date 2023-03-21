@@ -338,6 +338,7 @@ class Menu:
                 self.manage_tournament(tournament)
             else:
                 print("choix invalide")
+                time.sleep(1)
                 self.manage_tournament(tournament)
 
     def display_tournament_players_list(

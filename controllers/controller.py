@@ -16,6 +16,7 @@ def build_tournament_id(tournament_id_ref):
 
 class Controller:
     def control_start(self, menu):
+        """start menu of the aplication"""
         choice = menu.start()
         if choice == "create_tournament":
             tournament_data = menu.tournament_creation()
@@ -64,7 +65,6 @@ class Controller:
             with open(JSON_TOUR_ID_FILENAME, "w") as json_tournament_id_file:
                 json.dump(tournament_json, json_tournament_id_file)
 
-            # print(new_tournament.__dict__)
             print("le tournoi a été créé")
             time.sleep(1)
             self.control_start(menu)
@@ -82,6 +82,9 @@ class Controller:
             self.control_start(menu)
 
     def control_tournaments_list(self, menu):
+        """tournament lists used to select the tournament to update
+        the list is retrieved from the json file
+        """
         tournament_list = []
         file_exist = False
         try:
@@ -104,17 +107,23 @@ class Controller:
             file_exist = False
 
         if file_exist:
+            # if the file exist we can display the list
+            # and ask for the tournament to update
             tournament_id = menu.tournaments_list(tournament_list)
-            # print(tournament_id)
+            # with the id we recreate the tournament object
             json2object = Json2Object()
             tournament = json2object.tournament(tournament_id)
             self.control_update_tournament(menu, tournament)
         else:
+            # if the file does not exist no tournament can be updated
             print("Aucun tournoi n'existe pour l'instant")
             time.sleep(1)
             self.control_start(menu)
 
     def display_tournaments_list(self, menu):
+        """create the full tournament list report
+        and call the view to display it
+        """
         tournament_list = []
         file_exist = False
         try:
@@ -139,14 +148,19 @@ class Controller:
             file_exist = False
 
         if file_exist:
+            # the file exist there is data
+            # call the view to display the data
             menu.display_tournaments_list(tournament_list)
         else:
             print("Aucun tournoi n'existe pour l'instant")
             time.sleep(1)
 
+        # we are back from the view or no list exist
+        # we go back to the start menu
         self.control_start(menu)
 
     def display_players_list(self, menu):
+        """create full list of user and call the view to display it"""
         players_list = {}
         try:
             # load the player list
@@ -156,10 +170,14 @@ class Controller:
         except FileNotFoundError:
             pass
 
+        # call the view to display the data
         menu.display_players_list(players_list)
+
+        # we are back from the view we go back to the start menu
         self.control_start(menu)
 
     def control_update_tournament(self, menu, tournament):
+        """control the menu for all the option concerning a tournament"""
         choice = menu.tournament_update(tournament)
         if choice == "manage_tournament":
             self.control_manage_tournament(menu, tournament)
@@ -349,22 +367,23 @@ class Controller:
         return round_players_list
 
     def control_create_round(self, menu, tournament):
-        previous_round = tournament.rounds[-1]
-        if previous_round.end_date is None:
-            print(
-                "Merci de fermer la ronde précédente",
-                "avant de créer la nouvelle",
-            )
-            time.sleep(2)
-            self.control_update_tournament(menu, tournament)
-        else:
-            tournament.create_round()
-            tournament.json_save()
-            round = tournament.rounds[-1]
-            round_players_list = self.round_players_list(round)
+        if tournament.rounds != []:
+            previous_round = tournament.rounds[-1]
+            if previous_round.end_date is None:
+                print(
+                    "Merci de fermer la ronde précédente",
+                    "avant de créer la nouvelle",
+                )
+                time.sleep(2)
+                self.control_update_tournament(menu, tournament)
 
-            menu.created_round(tournament, round_players_list)
-            self.control_update_tournament(menu, tournament)
+        tournament.create_round()
+        tournament.json_save()
+        round = tournament.rounds[-1]
+        round_players_list = self.round_players_list(round)
+
+        menu.created_round(tournament, round_players_list)
+        self.control_update_tournament(menu, tournament)
 
     def update_score(self, tournament, result):
         round = tournament.rounds[-1]

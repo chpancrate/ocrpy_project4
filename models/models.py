@@ -10,7 +10,9 @@ from typing import List
 JSON_DIR_NAME = "data/"
 JSON_PLAY_FILENAME = "data/players.json"
 JSON_TOUR_FILENAME = "data/tournaments.json"
+# define the name and path for the file that store the next tournament index
 JSON_TOUR_ID_FILENAME = "data/tournaments_id_ref.json"
+
 ROUND_LABEL = "Ronde "
 DEFAULT_NUMBER_OF_ROUND = 4
 
@@ -100,9 +102,12 @@ class Game:
     in a draw both player get 0.5 pts"""
 
     def __init__(self, national_chess_id1, national_chess_id2):
+        """game opposes two players identified by their id
+        the result of the game is given by the score of each player"""
         self.result = {national_chess_id1: 0, national_chess_id2: 0}
 
     def store_result(self, player_id1, score1, player_id2, score2):
+        """the scores are stored next to the player id"""
         self.result[player_id1] = score1
         self.result[player_id2] = score2
 
@@ -111,7 +116,10 @@ class Round:
     """tournament round class"""
 
     def __init__(self, name):
+        """a round tournament has a name, a start gate and an end date
+        it contains a list of games"""
         self.name = name
+        # the round starts when generated
         self.start_date = datetime.datetime.today().strftime(
             "%Y-%m-%d %H:%M:%S"
         )
@@ -119,9 +127,11 @@ class Round:
         self.games = []
 
     def add_game(self, game):
+        """add a game to the list of games of the round"""
         self.games.append(game)
 
     def check_existing_game(self, searched_game):
+        """check if a game already exist in the round"""
         game_found = False
         for game in self.games:
             number_key_found = 0
@@ -138,6 +148,7 @@ class Round:
         return game_found
 
     def end_round(self):
+        """allow to close a round when needed"""
         self.end_date = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -147,10 +158,12 @@ class PlayerRank:
     store the current score of the player in the tournament"""
 
     def __init__(self, national_chess_id):
+        """A player rank has a player_id and a corresponding score"""
         self.national_chess_id = national_chess_id
         self.total_score = 0
 
     def update_score(self, score):
+        """update the score correponding to the player id"""
         self.total_score = self.total_score + score
 
     def __str__(self):
@@ -166,21 +179,25 @@ class Ranking(list):
     """Tournament ranking class"""
 
     def append(self, object):
-        """append a player rank"""
+        """ensure only player rank are added"""
         if not isinstance(object, PlayerRank):
             return ValueError("vous ne pouvez ajouter que score de joueur")
         return super().append(object)
 
     def sort_by_score(self):
+        """sort all the ranks by their score"""
         self.sort(key=lambda x: x.total_score)
 
     def add_player_rank(self, player_rank):
+        """add a olayer rank to the ranking"""
         self.append(player_rank)
 
     def shuffle(self):
+        """shuffle the ranking"""
         random.shuffle(self)
 
     def store_score(self, player_id, score):
+        """update the score of a player in the ranking"""
         for rank in self:
             if rank.national_chess_id == player_id:
                 rank.update_score(score)
@@ -215,16 +232,18 @@ class Tournament:
         self.ranking = Ranking()
 
     def register_player(self, player_id):
+        """register a player in the tournament"""
         rank = PlayerRank(player_id)
         self.ranking.append(rank)
 
     def create_round(self):
+        """create a round for the tournament"""
         # shuffle the ranking to shuffle player with same score
         random.shuffle(self.ranking)
         # sort the ranking by score
         self.ranking.sort_by_score()
-        """ read ranking and create game making sure previous round do not
-        have same game"""
+        # read ranking and create game making sure previous round do not
+        # have same game
         self.current_round += 1
         if self.current_round > self.number_of_rounds:
             print("le nombre de tour maximum est atteint")
@@ -233,35 +252,34 @@ class Tournament:
             round_name = ROUND_LABEL + str(self.current_round)
             new_round = Round(round_name)
             work_ranking = copy.deepcopy(self.ranking)
+            # loop in the ranking getting the first player in the list
+            # then try to match it with another player in the ranking
+            # when a pair is found it's removed from the working ranking
+            # we then do the process again until the working ranking is empty
             while len(work_ranking) > 1:
-                # print(len(work_ranking))
-                # get the first id in ranking
+                # get the first id in the working ranking
                 first_player = work_ranking.pop(0).national_chess_id
                 i = 0
                 for rank in work_ranking:
-                    second_player = work_ranking[i].national_chess_id
+                    # read the next ranking
+                    second_player = rank.national_chess_id
                     new_game = Game(first_player, second_player)
                     match_exist = False
                     for round in self.rounds:
+                        # check if players already played against each other
                         match_exist = round.check_existing_game(new_game)
-                        # print("game exists already")
                         if match_exist:
                             break
                     if not match_exist:
-                        """the players did not play against each other
-                        we remove the second player from the list
-                        and add the game to the round"""
+                        # the players did not play against each other
+                        # we remove the second player from the list
                         work_ranking.pop(i)
+                        # and add the game to the round
                         new_round.add_game(new_game)
-                        # print("new game created")
-                        # print(new_game)
-                        # print(new_round.games)
-                        # for game in new_round.games:
-                        #    print(game.result)
                         break
                     else:
-                        """the players have already played against each other
-                        in the tournament we take the next one"""
+                        # the players have already played against each other
+                        # in the tournament we take the next one
                         i += 1
             self.rounds.append(new_round)
 
@@ -293,12 +311,16 @@ class Tournament:
             tournament_found = False
             with open(JSON_TOUR_FILENAME, "r") as file_json:
                 json_tournaments_list_dict = json.load(file_json)
+                # load the file in a json object
+                # search if the tournament already exist
                 for tournament in json_tournaments_list_dict[
                     "tournaments_list"
                 ]:
                     if tournament["tournament_id"] == self.tournament_id:
+                        # the tournament exist
                         tournament_found = True
 
+                        # replace the data with the new one and stop the search
                         tournament["name"] = self.name
                         tournament["location"] = self.location
                         tournament["start_date"] = self.start_date
@@ -317,17 +339,22 @@ class Tournament:
                         break
 
                 if not tournament_found:
+                    # the tournament was not found add it at the end
                     json_tournament = json.dumps(self, default=obj_dict)
                     json_tournament_dict = json.loads(json_tournament)
                     json_tournaments_list_dict["tournaments_list"].append(
                         json_tournament_dict
                     )
 
+            # save the new json data to the file
             with open(JSON_TOUR_FILENAME, "w") as file_json:
                 json.dump(json_tournaments_list_dict, file_json)
 
 
 class Json2Object:
+    """retrieve tournament data from the json file
+    and create a tournament object with it"""
+
     def tournament(self, tournament_id):
         with open(JSON_TOUR_FILENAME, "r") as file_json:
             json_tournaments_list_dict = json.load(file_json)
@@ -358,10 +385,13 @@ class Json2Object:
                         tournament_json["current_round"]
                     )
 
+                    # rebuild the rounds list and add it to the tournament
                     if tournament_json["rounds"] == []:
                         tournament.rounds = []
                     else:
                         for round_json in tournament_json["rounds"]:
+                            # scan for the round create them
+                            # and add them to the list
                             round = Round(round_json["name"])
                             round.start_date = round_json["start_date"]
                             round.end_date = round_json["end_date"]
@@ -372,15 +402,19 @@ class Json2Object:
                                     players_data.append(
                                         game_json["result"][key]
                                     )
+                                # rebuild the games and add them to the rounds
                                 game = Game(players_data[0], players_data[2])
                                 game.result[players_data[0]] = players_data[1]
                                 game.result[players_data[2]] = players_data[3]
                                 round.games.append(game)
                             tournament.rounds.append(round)
 
+                    # rebuild the ranking
                     if tournament_json["ranking"] == []:
                         tournament.ranking = Ranking()
                     else:
+                        # scan for the player rank rebuild them
+                        # and add them to the ranking list
                         for rank_json in tournament_json["ranking"]:
                             rank = PlayerRank(rank_json["national_chess_id"])
                             rank.update_score(rank_json["total_score"])
