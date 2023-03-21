@@ -4,16 +4,16 @@ import datetime
 import copy
 import os
 import json
-from shutil import copymode
 from typing import List
 
 # define the name and path for the JSON players and tournaments files
 JSON_DIR_NAME = "data/"
 JSON_PLAY_FILENAME = "data/players.json"
-JSON_PLAY_COPY_FILENAME = "data/players_copy.json"
 JSON_TOUR_FILENAME = "data/tournaments.json"
-JSON_TOUR_COPY_FILENAME = "data/tournaments_copy.json"
 JSON_TOUR_ID_FILENAME = "data/tournaments_id_ref.json"
+ROUND_LABEL = "Ronde "
+DEFAULT_NUMBER_OF_ROUND = 4
+
 
 def obj_dict(obj):
     return obj.__dict__
@@ -52,36 +52,45 @@ class Player:
             os.makedirs(JSON_DIR_NAME)
 
         # create the jason string from the object
-        json_newline = json.dumps(self.__dict__) + "\n"
+        # json_newline = json.dumps(self.__dict__) + "\n"
 
         if not os.path.exists(JSON_PLAY_FILENAME):
-            # players file does not exist crete it and write the line
+            # players file does not exist we create it directly
+            players_list = []
+            players_list.append(self)
+
+            # create a dictionary of object
+            players_list_dict = {}
+            players_list_dict["players_list"] = players_list
+            # transform it in json including contained objects
+            json_players_list = json.dumps(players_list_dict, default=obj_dict)
+            # convert the string to a dictionnary
+            json_players_list_dict = json.loads(json_players_list)
+
             with open(JSON_PLAY_FILENAME, "w") as file_json:
-                file_json.write(json_newline)
+                json.dump(json_players_list_dict, file_json)
         else:
             # players file exist
-            # open a copy, tranfer data in the copy searching for the player id
-            # if player id found subsitute the newline,
-            # if not add it at the end
-            # then replace file with the copy
-            with open(JSON_PLAY_COPY_FILENAME, "w") as file_json_copy:
-                player_found = False
-                with open(JSON_PLAY_FILENAME, "r") as file_json:
-                    for json_line in file_json:
-                        player_json = json.loads(json_line)
-                        if (
-                            player_json["national_chess_id"]
-                            == self.national_chess_id
-                        ):
-                            player_found = True
-                            file_json_copy.write(json_newline)
-                        else:
-                            file_json_copy.write(json_line)
+            player_found = False
+            with open(JSON_PLAY_FILENAME, "r") as file_json:
+                json_players_list_dict = json.load(file_json)
+                for player in json_players_list_dict["players_list"]:
+                    if player["national_chess_id"] == self.national_chess_id:
+                        player_found = True
+                        player["name"] = self.name
+                        player["surname"] = self.surname
+                        player["birth_date"] = self.birth_date
+                        break
+
                 if not player_found:
-                    file_json_copy.write(json_newline)
-            copymode(JSON_PLAY_FILENAME, JSON_PLAY_COPY_FILENAME)
-            os.remove(JSON_PLAY_FILENAME)
-            os.rename(JSON_PLAY_COPY_FILENAME, JSON_PLAY_FILENAME)
+                    json_player = json.dumps(self, default=obj_dict)
+                    json_player_dict = json.loads(json_player)
+                    json_players_list_dict["players_list"].append(
+                        json_player_dict
+                    )
+
+            with open(JSON_PLAY_FILENAME, "w") as file_json:
+                json.dump(json_players_list_dict, file_json)
 
 
 class Game:
@@ -93,13 +102,9 @@ class Game:
     def __init__(self, national_chess_id1, national_chess_id2):
         self.result = {national_chess_id1: 0, national_chess_id2: 0}
 
-    def store_result(self, winner, loser, draw=False):
-        if draw:
-            self.result[winner] = 0.5
-            self.result[loser] = 0.5
-        else:
-            self.result[winner] = 1
-            self.result[loser] = 0
+    def store_result(self, player_id1, score1, player_id2, score2):
+        self.result[player_id1] = score1
+        self.result[player_id2] = score2
 
 
 class Round:
@@ -175,6 +180,12 @@ class Ranking(list):
     def shuffle(self):
         random.shuffle(self)
 
+    def store_score(self, player_id, score):
+        for rank in self:
+            if rank.national_chess_id == player_id:
+                rank.update_score(score)
+                break
+
 
 class Tournament:
     """tournament class"""
@@ -186,7 +197,7 @@ class Tournament:
         location,
         star_date,
         end_date,
-        number_of_rounds,
+        number_of_rounds=DEFAULT_NUMBER_OF_ROUND,
         description=" ",
     ):
         """need tournament_id, name, location,
@@ -219,7 +230,7 @@ class Tournament:
             print("le nombre de tour maximum est atteint")
             return ValueError("le nombre de tour maximum est atteint")
         else:
-            round_name = "Round " + str(self.current_round)
+            round_name = ROUND_LABEL + str(self.current_round)
             new_round = Round(round_name)
             work_ranking = copy.deepcopy(self.ranking)
             while len(work_ranking) > 1:
@@ -261,48 +272,68 @@ class Tournament:
         if not os.path.exists(JSON_DIR_NAME):
             os.makedirs(JSON_DIR_NAME)
 
-        # create the jason string from the object
-        json_newline = json.dumps(self.__dict__, default=obj_dict) + "\n"
-        print(json_newline)
-
         if not os.path.exists(JSON_TOUR_FILENAME):
             # tournament file does not exist create it and write the line
-            print("new file")
+            tournaments_list = []
+            tournaments_list.append(self)
+
+            # create a dictionary of object
+            tournaments_list_dict = {}
+            tournaments_list_dict["tournaments_list"] = tournaments_list
+            # transform it in json including contained objects
+            json_tournaments_list = json.dumps(
+                tournaments_list_dict, default=obj_dict
+            )
+            # convert the string to a dictionnary
+            json_tournaments_list_dict = json.loads(json_tournaments_list)
             with open(JSON_TOUR_FILENAME, "w") as file_json:
-                file_json.write(json_newline)
+                json.dump(json_tournaments_list_dict, file_json)
         else:
             # tournament file exist
-            # open a copy, tranfer data in the copy
-            # searching for the tournament id
-            # if tournament id found subsitute the newline,
-            # if not add it at the end
-            # then replace file with the copy
-            print("old file")
-            with open(JSON_TOUR_COPY_FILENAME, "w") as file_json_copy:
-                tournament_found = False
-                with open(JSON_TOUR_FILENAME, "r") as file_json:
-                    for json_line in file_json:
-                        tournament_json = json.loads(json_line)
-                        if (
-                            tournament_json["tournament_id"]
-                            == self.tournament_id
-                        ):
-                            tournament_found = True
-                            file_json_copy.write(json_newline)
-                        else:
-                            file_json_copy.write(json_line)
+            tournament_found = False
+            with open(JSON_TOUR_FILENAME, "r") as file_json:
+                json_tournaments_list_dict = json.load(file_json)
+                for tournament in json_tournaments_list_dict[
+                    "tournaments_list"
+                ]:
+                    if tournament["tournament_id"] == self.tournament_id:
+                        tournament_found = True
+
+                        tournament["name"] = self.name
+                        tournament["location"] = self.location
+                        tournament["start_date"] = self.start_date
+                        tournament["end_date"] = self.end_date
+                        tournament["number_of_rounds"] = self.number_of_rounds
+                        tournament["description"] = self.description
+                        tournament["current_round"] = self.current_round
+                        json_rounds = json.dumps(self.rounds, default=obj_dict)
+                        json_rounds_dict = json.loads(json_rounds)
+                        tournament["rounds"] = json_rounds_dict
+                        json_ranking = json.dumps(
+                            self.ranking, default=obj_dict
+                        )
+                        json_ranking_dict = json.loads(json_ranking)
+                        tournament["ranking"] = json_ranking_dict
+                        break
+
                 if not tournament_found:
-                    file_json_copy.write(json_newline)
-            copymode(JSON_TOUR_FILENAME, JSON_TOUR_COPY_FILENAME)
-            os.remove(JSON_TOUR_FILENAME)
-            os.rename(JSON_TOUR_COPY_FILENAME, JSON_TOUR_FILENAME)
+                    json_tournament = json.dumps(self, default=obj_dict)
+                    json_tournament_dict = json.loads(json_tournament)
+                    json_tournaments_list_dict["tournaments_list"].append(
+                        json_tournament_dict
+                    )
+
+            with open(JSON_TOUR_FILENAME, "w") as file_json:
+                json.dump(json_tournaments_list_dict, file_json)
 
 
 class Json2Object:
     def tournament(self, tournament_id):
         with open(JSON_TOUR_FILENAME, "r") as file_json:
-            for json_line in file_json:
-                tournament_json = json.loads(json_line)
+            json_tournaments_list_dict = json.load(file_json)
+            for tournament_json in json_tournaments_list_dict[
+                "tournaments_list"
+            ]:
                 if tournament_json["tournament_id"] == tournament_id:
                     # get the information from the file
                     name = tournament_json["name"]
@@ -323,7 +354,9 @@ class Json2Object:
                         description,
                     )
 
-                    tournament.current_round = tournament_json["current_round"]
+                    tournament.current_round = int(
+                        tournament_json["current_round"]
+                    )
 
                     if tournament_json["rounds"] == []:
                         tournament.rounds = []
@@ -346,7 +379,7 @@ class Json2Object:
                             tournament.rounds.append(round)
 
                     if tournament_json["ranking"] == []:
-                        tournament.ranking = []
+                        tournament.ranking = Ranking()
                     else:
                         for rank_json in tournament_json["ranking"]:
                             rank = PlayerRank(rank_json["national_chess_id"])
