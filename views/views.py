@@ -9,7 +9,10 @@ DATE_FORMAT = "%d/%m/%Y"
 WRONG_ID_FORMAT_MESSAGE = (
     "Le format du l'indentifiant n'est pas bon (ex : AB12345)"
 )
-WRONG_DATE_FORMAT_MESSAGE = "Le format de la date doit être JJ/MM/AAAA"
+WRONG_DATE_FORMAT_MESSAGE = (
+    "Date ou format de date incorrects,"
+    " le format de la date doit être JJ/MM/DDDD"
+)
 
 
 def check_national_chess_id_format(checked_id):
@@ -143,7 +146,16 @@ class Menu:
                 datetime.datetime.strptime(end_date, DATE_FORMAT)
                 good_format = True
             except ValueError:
-                print("Le format de la date doit être JJ/MM/DDDD")
+                print(WRONG_DATE_FORMAT_MESSAGE)
+            if end_date < tournament_data[-1]:
+                print(
+                    (
+                        "La date de fin doit être posterieure"
+                        " à la date de début"
+                    )
+                )
+                good_format = False
+
         tournament_data.append(end_date)
 
         good_format = False
@@ -308,14 +320,34 @@ class Menu:
                 tournament.location = input("Entrer le nouveau lieu : ")
                 self.manage_tournament(tournament)
             elif choice == "d":
-                tournament.start_date = input(
-                    "Entrer la nouvelle date de début : "
-                )
+                good_format = False
+                while not good_format:
+                    start_date = input("Entrer la nouvelle date de début : ")
+                    try:
+                        datetime.datetime.strptime(start_date, DATE_FORMAT)
+                        good_format = True
+                    except ValueError:
+                        print(WRONG_DATE_FORMAT_MESSAGE)
+                tournament.start_date = start_date
                 self.manage_tournament(tournament)
             elif choice == "f":
-                tournament.end_date = input(
-                    "Entrer la nouvelle date de fin : "
-                )
+                good_format = False
+                while not good_format:
+                    end_date = input("Entrer la nouvelle date de fin : ")
+                    try:
+                        datetime.datetime.strptime(end_date, DATE_FORMAT)
+                        good_format = True
+                    except ValueError:
+                        print(WRONG_DATE_FORMAT_MESSAGE)
+                    if end_date < tournament.start_date:
+                        print(
+                            (
+                                "La date de fin doit être posterieure"
+                                " à la date de début"
+                            )
+                        )
+                        good_format = False
+                tournament.end_date = end_date
                 self.manage_tournament(tournament)
             elif choice == "r":
                 tournament.number_of_rounds = input(
