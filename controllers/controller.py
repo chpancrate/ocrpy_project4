@@ -14,6 +14,83 @@ def build_tournament_id(tournament_id_ref):
     return "TOU" + str(tournament_id_ref).zfill(5)
 
 
+def retrieve_tournament_players_data(tournament):
+    """Create the players list from the tournament ranking
+    additional data come from the players file : JSON_PLAY_FILENAME
+    """
+    tournament_players_list = {}
+    try:
+        # load the players data from the file
+        with open(JSON_PLAY_FILENAME, "r") as file_json:
+            json_players_list_dict = json.load(file_json)
+            players_list = json_players_list_dict["players_list"]
+            # for each player_id in the ranking, complete the data
+            for rank in tournament.ranking:
+                player_data = []
+                for player in players_list:
+                    if rank.national_chess_id == player["national_chess_id"]:
+                        player_data.append(player["name"])
+                        player_data.append(player["surname"])
+                        player_data.append(player["birth_date"])
+                        player_update = {}
+                        player_update[
+                            player["national_chess_id"]
+                        ] = player_data
+                        tournament_players_list.update(player_update)
+                        break
+    except FileNotFoundError:
+        pass
+    return tournament_players_list
+
+
+def update_score(tournament, result):
+    """update the score in a tournament ranking
+    check that the game has not been entered yet
+    if yes remove the result from the ranking
+    add the new result to the ranking
+    """
+    round = tournament.rounds[-1]
+    player_id = result[1]
+    result_type = result[0]
+
+    if result_type == "v":
+        player_score = 1
+        other_player_score = 0
+    else:
+        player_score = 0.5
+        other_player_score = 0.5
+
+    for game in round.games:
+        if player_id in game.result:
+            for key in game.result.keys():
+                if key != player_id:
+                    other_player_id = key
+
+            player_old_score = game.result[player_id]
+            other_player_old_score = game.result[other_player_id]
+
+            if player_old_score != 0 or other_player_old_score != 0:
+                # there's already a result, remove old score from ranking
+                player_old_score = -1 * player_old_score
+                other_player_old_score = -1 * other_player_old_score
+                tournament.ranking.store_score(player_id, player_old_score)
+                tournament.ranking.store_score(
+                    other_player_id, other_player_old_score
+                )
+
+            # store the new score
+            game.store_result(
+                player_id,
+                player_score,
+                other_player_id,
+                other_player_score,
+            )
+            tournament.ranking.store_score(player_id, player_score)
+            tournament.ranking.store_score(other_player_id, other_player_score)
+            tournament.json_save()
+            break
+
+
 class Controller:
     def control_start(self, menu):
         """start menu of the aplication"""
@@ -177,7 +254,7 @@ class Controller:
         self.control_start(menu)
 
     def control_update_tournament(self, menu, tournament):
-        """control the menu for all the option concerning a tournament"""
+        """control the menu for all the options concerning a tournament"""
         choice = menu.tournament_update(tournament)
         if choice == "manage_tournament":
             self.control_manage_tournament(menu, tournament)
@@ -199,88 +276,44 @@ class Controller:
             self.control_start(menu)
 
     def control_manage_tournament(self, menu, tournament):
+        """control the tournament information management screen"""
         menu.manage_tournament(tournament)
         tournament.json_save()
         self.control_update_tournament(menu, tournament)
 
     def display_tournament_players_list(self, menu, tournament):
-        # Dispay the players list from the tournament ranking
-        # additional data come from the players file : JSON_PLAY_FILENAME
-        tournament_players_list = {}
-        try:
-            # load the player list
-            with open(JSON_PLAY_FILENAME, "r") as file_json:
-                json_players_list_dict = json.load(file_json)
-                players_list = json_players_list_dict["players_list"]
-                for rank in tournament.ranking:
-                    player_data = []
-                    for player in players_list:
-                        if (
-                            rank.national_chess_id
-                            == player["national_chess_id"]
-                        ):
-                            player_data.append(player["name"])
-                            player_data.append(player["surname"])
-                            player_data.append(player["birth_date"])
-                            player_update = {}
-                            player_update[
-                                player["national_chess_id"]
-                            ] = player_data
-                            tournament_players_list.update(player_update)
-                            break
-        except FileNotFoundError:
-            pass
-        # print(tournament_players_list)
+        """control the report on tournament players list
+        only display the data
+        """
+        tournament_players_list = retrieve_tournament_players_data(tournament)
         menu.display_tournament_players_list(
             tournament, tournament_players_list
         )
         self.control_update_tournament(menu, tournament)
 
     def control_tournament_players_list(self, menu, tournament):
-        # Create the players list from the tournament ranking
-        # additional data come from the players file : JSON_PLAY_FILENAME
-        tournament_players_list = {}
-        try:
-            # load the player list
-            with open(JSON_PLAY_FILENAME, "r") as file_json:
-                json_players_list_dict = json.load(file_json)
-                players_list = json_players_list_dict["players_list"]
-                for rank in tournament.ranking:
-                    player_data = []
-                    for player in players_list:
-                        if (
-                            rank.national_chess_id
-                            == player["national_chess_id"]
-                        ):
-                            player_data.append(player["name"])
-                            player_data.append(player["surname"])
-                            player_data.append(player["birth_date"])
-                            player_update = {}
-                            player_update[
-                                player["national_chess_id"]
-                            ] = player_data
-                            tournament_players_list.update(player_update)
-                            break
-        except FileNotFoundError:
-            pass
-        # print(tournament_players_list)
+        """control tournament players list managment screen
+        retrieve information in order to add player to tournament ranking
+        """
+        tournament_players_list = retrieve_tournament_players_data(tournament)
         player_id = menu.tournament_players_list(
             tournament, tournament_players_list
         )
-        # print("control_player_list :", player_id)
-        # time.sleep(1)
         if player_id == "back":
             self.control_update_tournament(menu, tournament)
         else:
-            # print("control_player_list with Player ID")
-            # time.sleep(1)
             self.control_create_player(menu, tournament, player_id)
 
     def control_create_player(self, menu, tournament, player_id):
-        # print("control_create_player")
-        # time.sleep(1)
+        """control the addition of player in a tournament ranking
+        check if the player already exist in the players file
+        if yes : propose to add it
+        if not : propose to create it
+        """
         player_found = False
         try:
+            # open the players file and check if the palyer exist
+            # if yes retrieve the data for the player
             with open(JSON_PLAY_FILENAME, "r") as file_json:
                 json_players_list_dict = json.load(file_json)
                 players_list = json_players_list_dict["players_list"]
@@ -292,25 +325,20 @@ class Controller:
                         player_to_add.append(player["surname"])
                         player_to_add.append(player["birth_date"])
                         player_found = True
-                        # print("control_create_player player_found =",
-                        #  player_found)
-                        # print(player_to_add)
-                        # time.sleep(1)
                         break
         except FileNotFoundError:
             pass
 
-        # print("control_create_player player_found =", player_found)
-        # time.sleep(1)
         if player_found:
-            # print("control_create_player add_player_from_file")
-            # time.sleep(1)
+            # the player was found, propose to register it, if yes do it
             choice = menu.add_player_from_file(player_to_add, tournament)
             if choice:
                 tournament.register_player(player_id)
                 tournament.json_save()
             self.control_tournament_players_list(menu, tournament)
         else:
+            # the player was not found ask for the information
+            # needed to create it, and add it to the tournament
             player_data = menu.add_new_player(tournament, player_id)
             # create player with data from view
             # 0-> name
@@ -325,6 +353,9 @@ class Controller:
             self.control_tournament_players_list(menu, tournament)
 
     def round_players_list(self, round):
+        """retrieve all the data for the players of a round
+        in the players file
+        """
         with open(JSON_PLAY_FILENAME, "r") as file_json:
             json_players_list_dict = json.load(file_json)
             players_list = json_players_list_dict["players_list"]
@@ -332,7 +363,7 @@ class Controller:
         round_players_list = []
         for game in round.games:
             players_id = []
-            # get the players id from the game
+            # get the two players id from the game
             for key in game.result.keys():
                 players_id.append(key)
             player_id = players_id[0]
@@ -341,7 +372,7 @@ class Controller:
             player_score = game.result[player_id]
             other_player_score = game.result[other_player_id]
 
-            # get the player data corresponding to the players
+            # get the data corresponding to the players
             for player in players_list:
                 if player["national_chess_id"] == player_id:
                     player_name = player["name"]
@@ -367,9 +398,14 @@ class Controller:
         return round_players_list
 
     def control_create_round(self, menu, tournament):
+        """control the round creation, check if the previous round is closed
+        if not alert the user
+        if yes create the round
+        """
         if tournament.rounds != []:
             previous_round = tournament.rounds[-1]
             if previous_round.end_date is None:
+                # previous round is not closed
                 print(
                     "Merci de fermer la ronde précédente",
                     "avant de créer la nouvelle",
@@ -385,50 +421,8 @@ class Controller:
         menu.created_round(tournament, round_players_list)
         self.control_update_tournament(menu, tournament)
 
-    def update_score(self, tournament, result):
-        round = tournament.rounds[-1]
-        player_id = result[1]
-        result_type = result[0]
-
-        if result_type == "v":
-            player_score = 1
-            other_player_score = 0
-        else:
-            player_score = 0.5
-            other_player_score = 0.5
-
-        for game in round.games:
-            if player_id in game.result:
-                for key in game.result.keys():
-                    if key != player_id:
-                        other_player_id = key
-
-                player_old_score = game.result[player_id]
-                other_player_old_score = game.result[other_player_id]
-
-                if player_old_score != 0 or other_player_old_score != 0:
-                    # there's already a result, remove old score from ranking
-                    player_old_score = -1 * player_old_score
-                    other_player_old_score = -1 * other_player_old_score
-                    tournament.ranking.store_score(player_id, player_old_score)
-                    tournament.ranking.store_score(
-                        other_player_id, other_player_old_score
-                    )
-
-                game.store_result(
-                    player_id,
-                    player_score,
-                    other_player_id,
-                    other_player_score,
-                )
-                tournament.ranking.store_score(player_id, player_score)
-                tournament.ranking.store_score(
-                    other_player_id, other_player_score
-                )
-                tournament.json_save()
-                break
-
     def control_input_result(self, menu, tournament):
+        """control the result input screen"""
         round = tournament.rounds[-1]
         round_players_list = self.round_players_list(round)
 
@@ -436,12 +430,13 @@ class Controller:
         if result[0] == "back":
             self.control_update_tournament(menu, tournament)
         else:
-            self.update_score(tournament, result)
+            update_score(tournament, result)
             print("résultats mis à jour.")
             time.sleep(1)
             self.control_input_result(menu, tournament)
 
     def display_rounds(self, menu, tournament):
+        """control the full rounds and matchs report"""
         full_rounds_list = {}
         for round in tournament.rounds:
             round_players_list = self.round_players_list(round)
@@ -454,6 +449,9 @@ class Controller:
         self.control_update_tournament(menu, tournament)
 
     def control_close_round(self, menu, tournament):
+        """control the round closure process
+        all the results of the round must be entered to allow closure
+        """
         round = tournament.rounds[-1]
         # first check if all the results are stored
         all_results_in = True

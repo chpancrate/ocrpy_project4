@@ -42,32 +42,38 @@ def check_tournament_id_format(checked_id):
 
 class Menu:
     def header(self):
+        """dipslay the general header of the application"""
         os.system("cls")
         print("************************************************************")
         print("*               Gestion de tournois d'échecs               *")
         print("************************************************************")
 
     def header_creation(self):
+        """display the header of the tournament creation"""
         self.header()
         print("*                   Création de tournoi                    *")
         print("------------------------------------------------------------")
 
     def header_update(self):
+        """display the header of the tournament update"""
         self.header()
         print("*                 Modification de tournoi                  *")
         print("------------------------------------------------------------")
 
     def header_tournament(self, tournament):
-        print("tournoi :", tournament.name)
+        """dispay the header for tournament update
+        displaying additional data of the tournament
+        """
+        print("Tournoi :", tournament.name)
         print(
-            "nombre de rondes:",
+            "Nombre de rondes : ",
             tournament.number_of_rounds,
-            "ronde actuelle:",
+            " |  ronde actuelle:",
             tournament.current_round,
         )
         self.separator()
 
-    def header_manage(self, tournament):
+    def tournament_info(self, tournament):
         print("Nom du tournoi :", tournament.name)
         print("Lieu :", tournament.location)
         print(
@@ -89,6 +95,7 @@ class Menu:
         print("------------------------------------------------------------")
 
     def start(self):
+        """dispaly the start menu"""
         self.header()
         print("1 - Créer un tournoi")
         print("2 - Visualiser ou modifier un tournoi")
@@ -111,6 +118,7 @@ class Menu:
             return "invalid"
 
     def tournament_creation(self):
+        """display the tournament creation query"""
         self.header_creation()
         tournament_data = []
         name = input("Quel est le nom du tournoi ? : ")
@@ -158,6 +166,9 @@ class Menu:
         return tournament_data
 
     def tournaments_list(self, tournament_list):
+        """display the tournaments list for selection
+        of a tournament by the user
+        """
         self.header_update()
         table = PrettyTable()
         table.field_names = [
@@ -201,6 +212,7 @@ class Menu:
                 return choice
 
     def display_tournaments_list(self, tournament_list):
+        """display the tournaments list report"""
         self.header_update()
         table = PrettyTable()
         table.field_names = [
@@ -230,6 +242,7 @@ class Menu:
         input("Appuyer sur entrée pour revenir au menu précédent")
 
     def tournament_update(self, tournament):
+        """display the tournament update menu"""
         good_choice = False
         while not good_choice:
             self.header_update()
@@ -275,9 +288,10 @@ class Menu:
                 time.sleep(1)
 
     def manage_tournament(self, tournament):
+        """display the tournament data management screen"""
         self.header()
         self.header_update()
-        self.header_manage(tournament)
+        self.tournament_info(tournament)
         if tournament.rounds == []:
             print("pour modifier saisir la lettre correspondante :")
             print("(n)om, (l)ieu, (d)ébut, (f)in =), (r)ondes, d(e)scritpion")
@@ -344,7 +358,7 @@ class Menu:
     def display_tournament_players_list(
         self, tournament, tournament_players_list
     ):
-        # print headers
+        """display the tournament players report"""
         self.header_update()
         self.header_tournament(tournament)
         print("Liste des joueurs du Tournoi :")
@@ -375,7 +389,7 @@ class Menu:
         input("Appuyer sur entrée pour revenir au menu précédent")
 
     def tournament_players_list(self, tournament, tournament_players_list):
-        # print headers
+        """display the tournament players list screen for update of the list"""
         self.header_update()
         self.header_tournament(tournament)
         print("Liste des joueurs du Tournoi :")
@@ -422,6 +436,7 @@ class Menu:
                 print(WRONG_ID_FORMAT_MESSAGE)
 
     def add_player_from_file(self, player_to_add, tournament):
+        """display the questions to add a player from the players file"""
         self.header_update()
         self.header_tournament(tournament)
         print("Le joueur suivant a été trouvé dans le fichier des joueurs :")
@@ -436,6 +451,7 @@ class Menu:
             return False
 
     def add_new_player(self, tournament, player_id):
+        """display the questions to create a new player"""
         self.header_update()
         self.header_tournament(tournament)
         player_data = []
@@ -462,6 +478,7 @@ class Menu:
         return player_data
 
     def round_list(self, round_players_list):
+        """display a table containing all the games for a round"""
         table = PrettyTable()
         table.field_names = [
             "Premier joueur",
@@ -495,6 +512,7 @@ class Menu:
         print(table)
 
     def created_round(self, tournament, round_players_list):
+        """display the end screen of the round creation process"""
         self.header_update()
         self.header_tournament(tournament)
         self.separator()
@@ -503,6 +521,7 @@ class Menu:
         input("Appuyer sur entrée pour revenir au menu précédent")
 
     def input_result(self, tournament, round_players_list):
+        """display the screen for result input"""
         self.header_update()
         self.header_tournament(tournament)
         print("Détails de la ronde actuelle :")
@@ -541,6 +560,7 @@ class Menu:
         return result
 
     def display_players_list(self, players_list):
+        """display the full players list report"""
         self.header()
         print("*                Liste complète des joueurs                *")
         print("------------------------------------------------------------")
@@ -569,13 +589,10 @@ class Menu:
         table.align["Date de naissance"] = "c"
         print(table.get_string(sortby="Nom"))
 
-        choice = input("Appuyer sur entrée pour revenir au menu précédent")
-        if choice is None:
-            return "option2"
-        else:
-            return "option1"
+        input("Appuyer sur entrée pour revenir au menu précédent")
 
     def display_rounds(self, tournament, full_rounds_list):
+        """display the full round and match report"""
         self.header()
         self.header_tournament(tournament)
         print("*                Liste complète des Rondes                 *")
@@ -620,6 +637,7 @@ class Menu:
         input("Appuyer sur entrée pour revenir au menu précédent")
 
     def close_round(self):
+        """ask fo round closure confiration"""
         choice = input("voulez-vous terminer la ronde en cours? (o/n) : ")
         if choice == "o":
             return True
