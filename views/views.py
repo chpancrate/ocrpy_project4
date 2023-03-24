@@ -154,7 +154,9 @@ class Menu:
 
     def display_tournaments_list(self, tournament_list):
         """display the tournaments list report"""
-        header_update()
+        header()
+        print("*               Liste complète des tournois                *")
+        print("------------------------------------------------------------")
         table = PrettyTable()
         table.field_names = [
             "Identifiant",
@@ -195,6 +197,7 @@ class Menu:
             print("5 - Créer la prochaine ronde")
             print("6 - Entrer les résultats de la ronde en cours")
             print("7 - terminer la ronde en cours")
+            print("8 - afficher le classement du tournoi")
             print("r - revenir au menu précédent")
             print("p - revenir au menu principal")
             separator()
@@ -220,6 +223,8 @@ class Menu:
                 return "input_results"
             elif choice == "7":
                 return "close_current_round"
+            elif choice == "8":
+                return "tournament_ranking"
             elif choice == "r":
                 return "back"
             elif choice == "p":
@@ -573,3 +578,33 @@ class Menu:
             return True
         else:
             return False
+
+    def display_tournament_ranking(self, tournament_info, tournament_ranking):
+        """display the full tournament ranking"""
+        header_update()
+        header_tournament(tournament_info)
+        print("*                   Classement du tournoi                   *")
+        print("------------------------------------------------------------")
+        table = PrettyTable()
+
+        table.field_names = [
+            "Identifiant",
+            "Nom",
+            "Prénom",
+            "Score",
+        ]
+        table.align = "c"
+
+        for key in tournament_ranking.keys():
+            table.add_row(
+                [
+                    key,
+                    tournament_ranking[key][0],
+                    tournament_ranking[key][1],
+                    tournament_ranking[key][2],
+                ]
+            )
+
+        print(table.get_string(sortby="Score", reversesort=True))
+
+        input("Appuyer sur entrée pour revenir au menu précédent")

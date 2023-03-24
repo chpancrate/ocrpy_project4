@@ -204,6 +204,8 @@ class Controller:
             self.control_input_result(tournament)
         elif choice == "close_current_round":
             self.control_close_round(tournament)
+        elif choice == "tournament_ranking":
+            self.display_tournament_ranking(tournament)
         elif choice == "back":
             self.control_tournaments_list()
         elif choice == "mainmenu":
@@ -385,6 +387,40 @@ class Controller:
                 " avant de la clore",
             )
             time.sleep(2)
+        self.control_update_tournament(tournament)
+
+    def display_tournament_ranking(self, tournament):
+        """control the display of the tournament ranking"""
+        tournament_ranking = {}
+        try:
+            # load the players data from the file
+            with open(JSON_PLAY_FILENAME, "r") as file_json:
+                json_players_list_dict = json.load(file_json)
+                players_list = json_players_list_dict["players_list"]
+                # for each player_id in the ranking, complete the data
+                for rank in tournament.ranking:
+                    player_data = []
+                    for player in players_list:
+                        if (
+                            rank.national_chess_id
+                            == player["national_chess_id"]
+                        ):
+                            player_data.append(player["name"])
+                            player_data.append(player["surname"])
+                            player_data.append(float(rank.total_score))
+                            player_update = {}
+                            player_update[
+                                player["national_chess_id"]
+                            ] = player_data
+                            tournament_ranking.update(player_update)
+                            break
+        except FileNotFoundError:
+            pass
+
+        tournament_info = build_tournament_info(tournament)
+        self.menu.display_tournament_ranking(
+            tournament_info, tournament_ranking
+        )
         self.control_update_tournament(tournament)
 
     def run(self):
