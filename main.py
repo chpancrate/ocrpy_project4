@@ -5,8 +5,8 @@ from views.views import Menu
 
 def main():
     menu = Menu()
-    game = Controller()
-    game.run(menu)
+    game = Controller(menu)
+    game.run()
 
 
 if __name__ == "__main__":
