@@ -339,13 +339,18 @@ class Controller:
                 time.sleep(2)
                 self.control_update_tournament(tournament)
 
-        tournament.create_round()
-        tournament.json_save()
-        round = tournament.rounds[-1]
-        round_players_list = create_round_players_list(round)
+        if tournament.current_round < tournament.number_of_rounds:
+            tournament.create_round()
+            tournament.json_save()
+            round = tournament.rounds[-1]
+            round_players_list = create_round_players_list(round)
 
-        tournament_info = build_tournament_info(tournament)
-        self.menu.created_round(tournament_info, round_players_list)
+            tournament_info = build_tournament_info(tournament)
+            self.menu.created_round(tournament_info, round_players_list)
+        else:
+            print("le nombre de tour maximum est atteint")
+            time.sleep(2)
+
         self.control_update_tournament(tournament)
 
     def control_input_result(self, tournament):

@@ -1,6 +1,7 @@
 """ models classes for chess tournament management software"""
 import random
 import datetime
+import time
 import copy
 import os
 import json
@@ -244,11 +245,12 @@ class Tournament:
         self.ranking.sort_by_score()
         # read ranking and create game making sure previous round do not
         # have same game
-        self.current_round += 1
-        if self.current_round > self.number_of_rounds:
+        next_round = self.current_round + 1
+        if next_round > self.number_of_rounds:
             print("le nombre de tour maximum est atteint")
-            return ValueError("le nombre de tour maximum est atteint")
+            time.sleep(2)
         else:
+            self.current_round = next_round
             round_name = ROUND_LABEL + str(self.current_round)
             new_round = Round(round_name)
             work_ranking = copy.deepcopy(self.ranking)
