@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 import json
 from .controller_functions import (
     build_tournament_id,
@@ -100,6 +101,9 @@ class Controller:
                 for tournament in json_tournament_list_dict[
                     "tournaments_list"
                 ]:
+                    sorting_date = datetime.strptime(
+                        tournament["start_date"], "%d/%m/%Y"
+                    )
                     tournament_list.append(
                         [
                             tournament["tournament_id"],
@@ -107,6 +111,7 @@ class Controller:
                             tournament["location"],
                             tournament["start_date"],
                             tournament["end_date"],
+                            sorting_date,
                         ]
                     )
         except FileNotFoundError:
@@ -139,6 +144,9 @@ class Controller:
                 for tournament in json_tournament_list_dict[
                     "tournaments_list"
                 ]:
+                    sorting_date = datetime.strptime(
+                        tournament["start_date"], "%d/%m/%Y"
+                    )
                     tournament_list.append(
                         [
                             tournament["tournament_id"],
@@ -148,6 +156,7 @@ class Controller:
                             tournament["end_date"],
                             tournament["number_of_rounds"],
                             tournament["current_round"],
+                            sorting_date,
                         ]
                     )
         except FileNotFoundError:
@@ -320,6 +329,15 @@ class Controller:
                 )
                 time.sleep(2)
                 self.control_update_tournament(tournament)
+        else:
+            if tournament.ranking == []:
+                # the ranking is empty no players are registered
+                print(
+                    "Aucun joueur n'est inscris. Merci de procéder aux",
+                    " inscriptions avant de créer la nouvelle ronde",
+                )
+                time.sleep(2)
+                self.control_update_tournament(tournament)
 
         tournament.create_round()
         tournament.json_save()
@@ -332,18 +350,27 @@ class Controller:
 
     def control_input_result(self, tournament):
         """control the result input screen"""
-        round = tournament.rounds[-1]
-        round_players_list = create_round_players_list(round)
 
-        tournament_info = build_tournament_info(tournament)
-        result = self.menu.input_result(tournament_info, round_players_list)
-        if result[0] == "back":
+        if tournament.rounds == []:
+            # there is no round, input result is not possible
+            print("aucune ronde n'existe pour ce tournoi !")
+            time.sleep(2)
             self.control_update_tournament(tournament)
         else:
-            update_score(tournament, result)
-            print("résultats mis à jour.")
-            time.sleep(1)
-            self.control_input_result(tournament)
+            round = tournament.rounds[-1]
+            round_players_list = create_round_players_list(round)
+
+            tournament_info = build_tournament_info(tournament)
+            result = self.menu.input_result(
+                tournament_info, round_players_list
+            )
+            if result[0] == "back":
+                self.control_update_tournament(tournament)
+            else:
+                update_score(tournament, result)
+                print("résultats mis à jour.")
+                time.sleep(1)
+                self.control_input_result(tournament)
 
     def display_rounds(self, tournament):
         """control the full rounds and matchs report"""
@@ -362,32 +389,38 @@ class Controller:
         """control the round closure process
         all the results of the round must be entered to allow closure
         """
-        round = tournament.rounds[-1]
-        # first check if all the results are stored
-        all_results_in = True
-        for game in round.games:
-            sum_scores = 0
-            for key in game.result.keys():
-                sum_scores = sum_scores + game.result[key]
-            # if the sum of all the score of the game is zero
-            # it means no score has been stored
-            if sum_scores == 0:
-                all_results_in = False
-                break
-
-        if all_results_in:
-            choice = self.menu.close_round()
-            if choice:
-                round.end_round()
-                print("Ronde close")
-                time.sleep(1)
-        else:
-            print(
-                "Veuillez compléter tous les résultats de la ronde",
-                " avant de la clore",
-            )
+        if tournament.rounds == []:
+            # there is no round, impossible to close one
+            print("aucune ronde n'existe pour ce tournoi !")
             time.sleep(2)
-        self.control_update_tournament(tournament)
+            self.control_update_tournament(tournament)
+        else:
+            round = tournament.rounds[-1]
+            # first check if all the results are stored
+            all_results_in = True
+            for game in round.games:
+                sum_scores = 0
+                for key in game.result.keys():
+                    sum_scores = sum_scores + game.result[key]
+                # if the sum of all the score of the game is zero
+                # it means no score has been stored
+                if sum_scores == 0:
+                    all_results_in = False
+                    break
+
+            if all_results_in:
+                choice = self.menu.close_round()
+                if choice:
+                    round.end_round()
+                    print("Ronde close")
+                    time.sleep(1)
+            else:
+                print(
+                    "Veuillez compléter tous les résultats de la ronde",
+                    " avant de la clore",
+                )
+                time.sleep(2)
+            self.control_update_tournament(tournament)
 
     def display_tournament_ranking(self, tournament):
         """control the display of the tournament ranking"""

@@ -62,7 +62,9 @@ class Menu:
         while not good_format:
             start_date = input("A quelle date commencera-t-il ? : ")
             try:
-                datetime.datetime.strptime(start_date, DATE_FORMAT)
+                tournament_start = datetime.datetime.strptime(
+                    start_date, DATE_FORMAT
+                )
                 good_format = True
             except ValueError:
                 print(WRONG_DATE_FORMAT_MESSAGE)
@@ -72,11 +74,13 @@ class Menu:
         while not good_format:
             end_date = input("Quand se terminera-t-il ? : ")
             try:
-                datetime.datetime.strptime(end_date, DATE_FORMAT)
+                tournament_end = datetime.datetime.strptime(
+                    end_date, DATE_FORMAT
+                )
                 good_format = True
             except ValueError:
                 print(WRONG_DATE_FORMAT_MESSAGE)
-            if end_date < tournament_data[-1]:
+            if tournament_end < tournament_start:
                 print(
                     (
                         "La date de fin doit être posterieure"
@@ -118,6 +122,7 @@ class Menu:
             "lieu",
             "Date de début",
             "Date de fin",
+            "tri",
         ]
         for tournament in tournament_list:
             table.add_row(
@@ -127,10 +132,22 @@ class Menu:
                     tournament[2],
                     tournament[3],
                     tournament[4],
+                    tournament[5],
                 ]
             )
 
-        print(table.get_string(sortby="Date de début"))
+        print(
+            table.get_string(
+                fields=[
+                    "Identifiant",
+                    "Nom",
+                    "lieu",
+                    "Date de début",
+                    "Date de fin",
+                ],
+                sortby="tri",
+            )
+        )
 
         choice = input("Entrer l'Id du tournoi que voulez-vous modifier : ")
         choice = choice.upper()
@@ -166,6 +183,7 @@ class Menu:
             "Date de fin",
             "nombre de ronde",
             "ronde en cours",
+            "tri",
         ]
         for tournament in tournament_list:
             table.add_row(
@@ -177,10 +195,24 @@ class Menu:
                     tournament[4],
                     tournament[5],
                     tournament[6],
+                    tournament[7],
                 ]
             )
 
-        print(table.get_string(sortby="Date de début"))
+        print(
+            table.get_string(
+                fields=[
+                    "Identifiant",
+                    "Nom",
+                    "lieu",
+                    "Date de début",
+                    "Date de fin",
+                    "nombre de ronde",
+                    "ronde en cours",
+                ],
+                sortby="tri",
+            )
+        )
 
         input("Appuyer sur entrée pour revenir au menu précédent")
 
@@ -259,7 +291,9 @@ class Menu:
                 while not good_format:
                     start_date = input("Entrer la nouvelle date de début : ")
                     try:
-                        datetime.datetime.strptime(start_date, DATE_FORMAT)
+                        tournament_start = datetime.datetime.strptime(
+                            start_date, DATE_FORMAT
+                        )
                         good_format = True
                     except ValueError:
                         print(WRONG_DATE_FORMAT_MESSAGE)
@@ -270,11 +304,13 @@ class Menu:
                 while not good_format:
                     end_date = input("Entrer la nouvelle date de fin : ")
                     try:
-                        datetime.datetime.strptime(end_date, DATE_FORMAT)
+                        tournament_end = datetime.datetime.strptime(
+                            end_date, DATE_FORMAT
+                        )
                         good_format = True
                     except ValueError:
                         print(WRONG_DATE_FORMAT_MESSAGE)
-                    if end_date < tournament_info["start_date"]:
+                    if tournament_end < tournament_start:
                         print(
                             (
                                 "La date de fin doit être posterieure"

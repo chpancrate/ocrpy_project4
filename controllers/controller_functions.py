@@ -1,5 +1,6 @@
 """functions used by the controller"""
 import json
+import time
 from models.models import JSON_PLAY_FILENAME
 
 
@@ -73,8 +74,10 @@ def update_score(tournament, result):
         player_score = 0.5
         other_player_score = 0.5
 
+    player_id_found = False
     for game in round.games:
         if player_id in game.result:
+            player_id_found = True
             for key in game.result.keys():
                 if key != player_id:
                     other_player_id = key
@@ -102,6 +105,9 @@ def update_score(tournament, result):
             tournament.ranking.store_score(other_player_id, other_player_score)
             tournament.json_save()
             break
+    if not player_id_found:
+        print("joueur inexistant!")
+        time.sleep(2)
 
 
 def create_round_players_list(round):

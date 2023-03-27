@@ -186,7 +186,7 @@ class Ranking(list):
 
     def sort_by_score(self):
         """sort all the ranks by their score"""
-        self.sort(key=lambda x: x.total_score)
+        self.sort(key=lambda x: x.total_score, reverse=True)
 
     def add_player_rank(self, player_rank):
         """add a olayer rank to the ranking"""
