@@ -154,7 +154,8 @@ class Menu:
         if not check_tournament_id_format(choice):
             print("format de numero de tournoi érroné")
             time.sleep(1)
-            self.tournaments_list(tournament_list)
+            choice = self.tournaments_list(tournament_list)
+            return choice
         else:
             tournament_in_list = False
             for tournament in tournament_list:
@@ -164,7 +165,8 @@ class Menu:
             if not tournament_in_list:
                 print("Ce tournoi n'est pas dans la liste")
                 time.sleep(1)
-                self.tournaments_list(tournament_list)
+                choice = self.tournaments_list(tournament_list)
+                return choice
             else:
                 print(choice)
                 return choice
@@ -344,7 +346,7 @@ class Menu:
                 )
             )
             choice = input(
-                ("taper d pour modifier la description" "ou xx pour sortir : ")
+                ("taper d pour modifier la description ou xx pour sortir : ")
             )
             if choice == "xx":
                 return
@@ -527,7 +529,7 @@ class Menu:
         else:
             print("Choix invalide")
             time.sleep(1)
-            self.input_result(tournament_info)
+            result = self.input_result(tournament_info, round_players_list)
         return result
 
     def display_players_list(self, players_list):
