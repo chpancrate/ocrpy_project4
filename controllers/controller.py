@@ -329,17 +329,15 @@ class Controller:
                 )
                 time.sleep(2)
                 self.control_update_tournament(tournament)
-        else:
-            if tournament.ranking == []:
-                # the ranking is empty no players are registered
-                print(
-                    "Aucun joueur n'est inscris. Merci de procéder aux",
-                    " inscriptions avant de créer la nouvelle ronde",
-                )
-                time.sleep(2)
-                self.control_update_tournament(tournament)
-
-        if tournament.current_round < tournament.number_of_rounds:
+        elif tournament.ranking == []:
+            # the ranking is empty no players are registered
+            print(
+                "Aucun joueur n'est inscris. Merci de procéder aux",
+                " inscriptions avant de créer la nouvelle ronde",
+            )
+            time.sleep(2)
+            self.control_update_tournament(tournament)
+        elif tournament.current_round < tournament.number_of_rounds:
             tournament.create_round()
             tournament.json_save()
             round = tournament.rounds[-1]
@@ -347,11 +345,11 @@ class Controller:
 
             tournament_info = build_tournament_info(tournament)
             self.menu.created_round(tournament_info, round_players_list)
+            self.control_update_tournament(tournament)
         else:
             print("le nombre de tour maximum est atteint")
             time.sleep(2)
-
-        self.control_update_tournament(tournament)
+            self.control_update_tournament(tournament)
 
     def control_input_result(self, tournament):
         """control the result input screen"""
