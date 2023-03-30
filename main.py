@@ -1,11 +1,12 @@
 """Chess Tournaments management software"""
 from controllers.controller import Controller
-from views.views import Menu
+from views.views import Menu, Report
 
 
 def main():
     menu = Menu()
-    game = Controller(menu)
+    report = Report()
+    game = Controller(menu, report)
     game.run()
 
 

@@ -7,6 +7,7 @@ from .controller_functions import (
     update_score,
     build_tournament_info,
     create_round_players_list,
+    retrieve_tournament_list,
 )
 from models.models import (
     Json2Object,
@@ -19,8 +20,9 @@ from models.models import (
 
 
 class Controller:
-    def __init__(self, view):
+    def __init__(self, view, report):
         self.menu = view
+        self.report = report
 
     def control_start(self):
         """start menu of the aplication"""
@@ -81,6 +83,8 @@ class Controller:
             self.display_tournaments_list()
         elif choice == "players_list":
             self.display_players_list()
+        elif choice == "reports":
+            self.control_reports_list()
         elif choice == "exit":
             print("Au revoir")
         else:
@@ -92,32 +96,9 @@ class Controller:
         """tournament lists used to select the tournament to update
         the list is retrieved from the json file
         """
-        tournament_list = []
-        file_exist = False
-        try:
-            with open(JSON_TOUR_FILENAME, "r") as file_json:
-                file_exist = True
-                json_tournament_list_dict = json.load(file_json)
-                for tournament in json_tournament_list_dict[
-                    "tournaments_list"
-                ]:
-                    sorting_date = datetime.strptime(
-                        tournament["start_date"], "%d/%m/%Y"
-                    )
-                    tournament_list.append(
-                        [
-                            tournament["tournament_id"],
-                            tournament["name"],
-                            tournament["location"],
-                            tournament["start_date"],
-                            tournament["end_date"],
-                            sorting_date,
-                        ]
-                    )
-        except FileNotFoundError:
-            file_exist = False
+        tournament_list = retrieve_tournament_list()
 
-        if file_exist:
+        if tournament_list != []:
             # if the file exist we can display the list
             # and ask for the tournament to update
             tournament_id = self.menu.tournaments_list(tournament_list)
@@ -126,7 +107,7 @@ class Controller:
             tournament = json2object.tournament(tournament_id)
             self.control_update_tournament(tournament)
         else:
-            # if the file does not exist no tournament can be updated
+            # if the list is empty no tournament can be updated
             print("Aucun tournoi n'existe pour l'instant")
             time.sleep(1)
             self.control_start()
@@ -458,6 +439,120 @@ class Controller:
             tournament_info, tournament_ranking
         )
         self.control_update_tournament(tournament)
+
+    def control_reports_list(self):
+        choice = self.menu.reports_list()
+        if choice == "players_list_report":
+            self.report_players_list()
+        elif choice == "tournaments_list_report":
+            self.report_tournaments_list()
+        elif choice == "tournament_report":
+            self.control_report_tournament(choice)
+        elif choice == "tournament_players_report":
+            self.control_report_tournament(choice)
+        elif choice == "tournament_rounds_report":
+            self.control_report_tournament(choice)
+        elif choice == "back":
+            self.control_start()
+
+    def control_report_tournament(self, choice):
+        tournament_list = retrieve_tournament_list()
+
+        if tournament_list != []:
+            # if the file exist we can display the list
+            # and ask for the tournament to update
+            tournament_id = self.menu.tournaments_list(tournament_list)
+            # with the id we recreate the tournament object
+            json2object = Json2Object()
+            tournament = json2object.tournament(tournament_id)
+            if choice == "tournament_report":
+                tournament_info = {}
+                tournament_info["tournament_id"] = tournament.tournament_id
+                tournament_info["name"] = tournament.name
+                tournament_info["start_date"] = tournament.start_date
+                tournament_info["end_date"] = tournament.end_date
+                self.report.tournament(tournament_info)
+                self.control_reports_list()
+            elif choice == "tournament_players_report":
+                tournament_players_list = retrieve_tournament_players_data(
+                    tournament
+                )
+                tournament_info = build_tournament_info(tournament)
+                self.report.tournament_players(
+                    tournament_info, tournament_players_list
+                )
+                self.control_reports_list()
+            elif choice == "tournament_rounds_report":
+                tournament_info = build_tournament_info(tournament)
+                full_rounds_list = {}
+                for round in tournament.rounds:
+                    round_players_list = create_round_players_list(round)
+                    round_data = {round.name: round_players_list}
+                    full_rounds_list.update(round_data)
+
+                self.report.tournament_rounds(
+                    tournament_info, full_rounds_list
+                )
+                self.control_reports_list()
+        else:
+            # if the list is empty no tournament can be updated
+            print("Aucun tournoi n'existe pour l'instant")
+            time.sleep(1)
+            self.control_reports_list()
+
+    def report_players_list(self):
+        """create the full list of players
+        and call the report to print it in a file
+        """
+        players_list = {}
+        try:
+            # load the player list
+            with open(JSON_PLAY_FILENAME, "r") as file_json:
+                json_players_list_dict = json.load(file_json)
+                players_list = json_players_list_dict["players_list"]
+        except FileNotFoundError:
+            pass
+
+        # call the view to create the report file
+        self.report.players_list(players_list)
+
+        # we are back from the view we go back to the start menu
+        self.control_reports_list()
+
+    def report_tournaments_list(self):
+        """create the full tournament list of players
+        and call the report to print it in a file
+        """
+        tournament_list = []
+        try:
+            with open(JSON_TOUR_FILENAME, "r") as file_json:
+                json_tournament_list_dict = json.load(file_json)
+                for tournament in json_tournament_list_dict[
+                    "tournaments_list"
+                ]:
+                    sorting_date = datetime.strptime(
+                        tournament["start_date"], "%d/%m/%Y"
+                    )
+                    tournament_list.append(
+                        [
+                            tournament["tournament_id"],
+                            tournament["name"],
+                            tournament["location"],
+                            tournament["start_date"],
+                            tournament["end_date"],
+                            tournament["number_of_rounds"],
+                            tournament["current_round"],
+                            sorting_date,
+                        ]
+                    )
+        except FileNotFoundError:
+            pass
+
+        # call the view to create the report file
+        self.report.tournaments_list(tournament_list)
+
+        # we are back from the view we go back to the start menu
+        self.control_reports_list()
 
     def run(self):
         self.control_start()

@@ -1,7 +1,8 @@
 """functions used by the controller"""
 import json
 import time
-from models.models import JSON_PLAY_FILENAME
+from datetime import datetime
+from models.models import JSON_PLAY_FILENAME, JSON_TOUR_FILENAME
 
 
 def build_tournament_id(tournament_id_ref):
@@ -154,3 +155,27 @@ def create_round_players_list(round):
         round_players_list.append(game_data)
 
     return round_players_list
+
+
+def retrieve_tournament_list():
+    tournament_list = []
+    try:
+        with open(JSON_TOUR_FILENAME, "r") as file_json:
+            json_tournament_list_dict = json.load(file_json)
+            for tournament in json_tournament_list_dict["tournaments_list"]:
+                sorting_date = datetime.strptime(
+                    tournament["start_date"], "%d/%m/%Y"
+                )
+                tournament_list.append(
+                    [
+                        tournament["tournament_id"],
+                        tournament["name"],
+                        tournament["location"],
+                        tournament["start_date"],
+                        tournament["end_date"],
+                        sorting_date,
+                    ]
+                )
+    except FileNotFoundError:
+        pass
+    return tournament_list

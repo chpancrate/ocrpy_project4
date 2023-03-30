@@ -6,6 +6,7 @@ This project is a script used to manage Chess Tournaments.
 The interface used is the command line.
 
 The data are stored in JSON files placed in the directory ./data
+The reports are produced in the repertory ./rapports
 
 ## Requirements
 These scripts run with Python 3.11.1
@@ -18,13 +19,15 @@ It is better to run the scripts in a virtual environment. You can find informati
 
 Once in your virtual environment, the following module need to be installed :
 - prettytable : 3.6.0
+- flake8      : 6.0.0
+- flake8-html : 0.4.3
 
 All the modules needed for the scripts are in requirements.txt. A quick way to install them is to run the command below in a python terminal:
 ```
 pip install -r requirements.txt
 ```
 
-## How to run
+## How to run the application
 
 In order to run the script, clone the following repository in the directory where you want the data to be stored : https://github.com/chpancrate/ocrpy_project4
 
@@ -34,6 +37,4 @@ python ./main.py
 ```
 The script will show the menus needed to interract with it.
 It will create all the needed files.
-
-
 

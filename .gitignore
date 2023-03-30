@@ -8,6 +8,7 @@ __pycache__/
 
 # data folder
 data/
+reports/
 
 # work files
 test.py
