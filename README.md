@@ -6,10 +6,10 @@ This project is a script used to manage Chess Tournaments.
 The interface used is the command line.
 
 The data are stored in JSON files placed in the directory ./data
-The reports are produced in the repertory ./rapports
+The reports are produced in the directory ./rapports
 
 ## Requirements
-These scripts run with Python 3.11.1
+These scripts run with Python 3.11.1.
 
 To install python you can download it here : https://www.python.org/downloads/
 
@@ -36,5 +36,17 @@ Then use the command :
 python ./main.py
 ```
 The script will show the menus needed to interract with it.
-It will create all the needed files.
+It will create all the needed files and directories.
 
+## How to run the flake8 report
+
+Ensure the you have installed flake8 and flake8-html as described in the requirements section.
+In the directory where the main.py is located, run the following command :
+```
+flake8 --exclude=ENVDIR --format=html --htmldir=flake-report 
+``` 
+where ENVDIR is the configuration directory of your virtual environment, example :
+```
+flake8 --exclude=.env --format=html --htmldir=flake-report 
+``` 
+The result can be accessed by opening the index.html file in the flake-report directory.
