@@ -321,6 +321,9 @@ class Menu:
                         good_format = True
                     except ValueError:
                         print(WRONG_DATE_FORMAT_MESSAGE)
+                    tournament_start = datetime.strptime(
+                        tournament_info["start_date"], DATE_FORMAT
+                    )
                     if tournament_end < tournament_start:
                         print(
                             (
