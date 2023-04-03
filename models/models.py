@@ -239,51 +239,74 @@ class Tournament:
 
     def create_round(self):
         """create a round for the tournament"""
+        if self.rounds == []:
+            # no rounds exist
+            if self.ranking == []:
+                # the ranking is empty no players are registered
+                # it's impossible to create a round
+                return "ko-no-players"
+        else:
+            if self.rounds[-1].end_date is None:
+                # previous round is not closed
+                return "ko-prev-round-not-closed"
+            elif self.current_round == self.number_of_rounds:
+                # the max numbert of rounds is already reached
+                return "ko-max-rounds-reached"
+
+        # all tests are ok we can create the round
+
         # shuffle the ranking to shuffle player with same score
         random.shuffle(self.ranking)
         # sort the ranking by score
         self.ranking.sort_by_score()
         # read ranking and create game making sure previous round do not
-        # have same game
-        next_round = self.current_round + 1
-        if next_round > self.number_of_rounds:
-            print("le nombre de tour maximum est atteint")
-            time.sleep(2)
-        else:
-            self.current_round = next_round
-            round_name = ROUND_LABEL + str(self.current_round)
-            new_round = Round(round_name)
-            work_ranking = copy.deepcopy(self.ranking)
-            # loop in the ranking getting the first player in the list
-            # then try to match it with another player in the ranking
-            # when a pair is found it's removed from the working ranking
-            # we then do the process again until the working ranking is empty
-            while len(work_ranking) > 1:
-                # get the first id in the working ranking
-                first_player = work_ranking.pop(0).national_chess_id
-                i = 0
-                for rank in work_ranking:
-                    # read the next ranking
-                    second_player = rank.national_chess_id
-                    new_game = Game(first_player, second_player)
-                    match_exist = False
-                    for round in self.rounds:
-                        # check if players already played against each other
-                        match_exist = round.check_existing_game(new_game)
-                        if match_exist:
-                            break
-                    if not match_exist:
-                        # the players did not play against each other
-                        # we remove the second player from the list
-                        work_ranking.pop(i)
-                        # and add the game to the round
-                        new_round.add_game(new_game)
+        # have the same game
+        new_current_round = self.current_round + 1
+        round_name = ROUND_LABEL + str(new_current_round)
+        new_round = Round(round_name)
+        work_ranking = copy.deepcopy(self.ranking)
+        # loop in the ranking getting the first player in the list
+        # then try to match it with another player in the ranking
+        # when a pair is found it's removed from the working ranking
+        # we then do the process again until the working
+        # ranking is empty or with only 1 player
+        while len(work_ranking) > 1:
+            # get the first id in the working ranking
+            first_player = work_ranking.pop(0).national_chess_id
+            i = 0
+            for rank in work_ranking:
+                # read the next ranking
+                second_player = rank.national_chess_id
+                new_game = Game(first_player, second_player)
+                match_exist = False
+                for round in self.rounds:
+                    # check if players already played
+                    # against each other
+                    match_exist = round.check_existing_game(new_game)
+                    if match_exist:
                         break
-                    else:
-                        # the players have already played against each other
-                        # in the tournament we take the next one
-                        i += 1
+                if not match_exist:
+                    # the players did not play against each other
+                    # we remove the second player from the list
+                    work_ranking.pop(i)
+                    # and add the game to the round
+                    new_round.add_game(new_game)
+                    break
+                else:
+                    # the players have already played against
+                    # each other in the tournament
+                    # we try the next one
+                    i += 1
+        
+        if new_round.games == []:
+            # the new round is empty because all the possible games
+            # have been played we do not use it we
+            return "ko-all-games-played"
+        else:
+            # unplayed games exist we can store the round
+            self.current_round = new_current_round
             self.rounds.append(new_round)
+            return "ok-round_created"
 
     def json_save(self):
         """save the tournament to the JSON_TOUR_FILENAME file"""

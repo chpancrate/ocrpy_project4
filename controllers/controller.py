@@ -296,54 +296,44 @@ class Controller:
             self.control_tournament_players_list(tournament)
 
     def control_create_round(self, tournament):
-        """control the round creation, check if the previous round is closed
-        if not alert the user
-        if yes create the round
+        """control the round creation, ask for the tournament to create
+        a new round, given the tournament answer alert the user or
+        aknowledge the creation
         """
-        if tournament.rounds != []:
-            # rounds exist
-            previous_round = tournament.rounds[-1]
-            if previous_round.end_date is None:
-                # previous round is not closed
-                print(
-                    "Merci de fermer la ronde précédente",
-                    "avant de créer la nouvelle",
-                )
-                time.sleep(2)
-                self.control_update_tournament(tournament)
-            elif tournament.current_round < tournament.number_of_rounds:
-                tournament.create_round()
-                tournament.json_save()
-                round = tournament.rounds[-1]
-                round_players_list = create_round_players_list(round)
-
-                tournament_info = build_tournament_info(tournament)
-                self.menu.created_round(tournament_info, round_players_list)
-                self.control_update_tournament(tournament)
-            else:
-                print("le nombre de rondes maximum est atteint")
-                time.sleep(2)
-                self.control_update_tournament(tournament)
-        else:
-            # no rounds exist and
-            if tournament.ranking == []:
-                # the ranking is empty no players are registered
-                print(
-                    "Aucun joueur n'est inscris. Merci de procéder aux",
-                    " inscriptions avant de créer la nouvelle ronde",
-                )
-                time.sleep(2)
-                self.control_update_tournament(tournament)
-            else:
-                # the ranking is not empty we can create a round
-                tournament.create_round()
-                tournament.json_save()
-                round = tournament.rounds[-1]
-                round_players_list = create_round_players_list(round)
-
-                tournament_info = build_tournament_info(tournament)
-                self.menu.created_round(tournament_info, round_players_list)
-                self.control_update_tournament(tournament)
+        result = tournament.create_round()
+        if result == "ko-no-players":
+            # the ranking is empty no players are registered
+            print(
+                "Aucun joueur n'est inscris. Merci de procéder aux",
+                " inscriptions avant de créer la nouvelle ronde",
+            )
+            time.sleep(2)
+            self.control_update_tournament(tournament)
+        elif result == "ko-prev-round-not-closed":
+            # previous round is not closed
+            print(
+                "Merci de fermer la ronde précédente",
+                "avant de créer la nouvelle",
+            )
+            time.sleep(2)
+            self.control_update_tournament(tournament)
+        elif result == "ko-max-rounds-reached":
+            # the maximum of rounds has been reached
+            print("le nombre de rondes maximum est atteint")
+            time.sleep(2)
+            self.control_update_tournament(tournament)
+        elif result == "ko-all-games-played":
+            # all the payers played agains each other
+            print("ronde non créée : tous les matchs possibles ont été joués")
+            time.sleep(2)
+            self.control_update_tournament(tournament)
+        elif result == "ok-round_created":
+            tournament.json_save()
+            round = tournament.rounds[-1]
+            round_players_list = create_round_players_list(round)
+            tournament_info = build_tournament_info(tournament)
+            self.menu.created_round(tournament_info, round_players_list)
+            self.control_update_tournament(tournament)
 
     def control_input_result(self, tournament):
         """control the result input screen"""
@@ -355,19 +345,26 @@ class Controller:
             self.control_update_tournament(tournament)
         else:
             round = tournament.rounds[-1]
-            round_players_list = create_round_players_list(round)
+            if round.end_date is None:
+                # the round is not closed we can still enter result
+                round_players_list = create_round_players_list(round)
 
-            tournament_info = build_tournament_info(tournament)
-            result = self.menu.input_result(
-                tournament_info, round_players_list
-            )
-            if result[0] == "back":
-                self.control_update_tournament(tournament)
+                tournament_info = build_tournament_info(tournament)
+                result = self.menu.input_result(
+                    tournament_info, round_players_list
+                )
+                if result[0] == "back":
+                    self.control_update_tournament(tournament)
+                else:
+                    update_score(tournament, result)
+                    print("résultats mis à jour.")
+                    time.sleep(1)
+                    self.control_input_result(tournament)
             else:
-                update_score(tournament, result)
-                print("résultats mis à jour.")
-                time.sleep(1)
-                self.control_input_result(tournament)
+                # the round is closed no modification can be done
+                print("Une ronde close ne peut plus être modifiée")
+                time.sleep(2)
+                self.control_update_tournament(tournament)
 
     def display_rounds(self, tournament):
         """control the full rounds and matchs report"""
@@ -393,32 +390,37 @@ class Controller:
             self.control_update_tournament(tournament)
         else:
             round = tournament.rounds[-1]
-            # first check if all the results are stored
-            all_results_in = True
-            for game in round.games:
-                sum_scores = 0
-                for key in game.result.keys():
-                    sum_scores = sum_scores + game.result[key]
-                # if the sum of all the score of the game is zero
-                # it means no score has been stored
-                if sum_scores == 0:
-                    all_results_in = False
-                    break
+            if round.end_date is None:
+                # first check if all the results are stored
+                all_results_in = True
+                for game in round.games:
+                    sum_scores = 0
+                    for key in game.result.keys():
+                        sum_scores = sum_scores + game.result[key]
+                    # if the sum of all the score of the game is zero
+                    # it means no score has been stored
+                    if sum_scores == 0:
+                        all_results_in = False
+                        break
 
-            if all_results_in:
-                choice = self.menu.close_round()
-                if choice:
-                    round.end_round()
-                    tournament.json_save()
-                    print("Ronde close")
-                    time.sleep(1)
+                if all_results_in:
+                    choice = self.menu.close_round()
+                    if choice:
+                        round.end_round()
+                        tournament.json_save()
+                        print("Ronde close")
+                        time.sleep(1)
+                else:
+                    print(
+                        "Veuillez compléter tous les résultats de la ronde",
+                        " avant de la clore",
+                    )
+                    time.sleep(2)
+                self.control_update_tournament(tournament)
             else:
-                print(
-                    "Veuillez compléter tous les résultats de la ronde",
-                    " avant de la clore",
-                )
+                print("Ronde déjà close")
                 time.sleep(2)
-            self.control_update_tournament(tournament)
+                self.control_update_tournament(tournament)
 
     def display_tournament_ranking(self, tournament):
         """control the display of the tournament ranking"""
