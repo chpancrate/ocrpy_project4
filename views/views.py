@@ -86,7 +86,7 @@ class Menu:
                 good_format = True
             except ValueError:
                 print(WRONG_DATE_FORMAT_MESSAGE)
-            if tournament_end < tournament_start:
+            if good_format and (tournament_end < tournament_start):
                 print(
                     (
                         "La date de fin doit être posterieure"
@@ -308,6 +308,17 @@ class Menu:
                         good_format = True
                     except ValueError:
                         print(WRONG_DATE_FORMAT_MESSAGE)
+                    tournament_end = datetime.strptime(
+                        tournament_info["end_date"], DATE_FORMAT
+                    )
+                    if good_format and tournament_end < tournament_start:
+                        print(
+                            (
+                                "La date de début doit être antérieure"
+                                " à la date de fin"
+                            )
+                        )
+                        good_format = False
                 tournament_info["start_date"] = start_date
                 self.manage_tournament(tournament_info, rounds_exist)
             elif choice == "f":
@@ -324,7 +335,7 @@ class Menu:
                     tournament_start = datetime.strptime(
                         tournament_info["start_date"], DATE_FORMAT
                     )
-                    if tournament_end < tournament_start:
+                    if good_format and tournament_end < tournament_start:
                         print(
                             (
                                 "La date de fin doit être posterieure"
@@ -335,9 +346,17 @@ class Menu:
                 tournament_info["end_date"] = end_date
                 self.manage_tournament(tournament_info, rounds_exist)
             elif choice == "r":
-                tournament_info["number_of_rounds"] = input(
-                    "Entrer le nouveau nombre de rondes : "
-                )
+                good_format = False
+                while not good_format:
+                    number_of_rounds = input(
+                        "Entrer le nouveau nombre de rondes : "
+                    )
+                    if number_of_rounds.isdigit():
+                        good_format = True
+                    else:
+                        print("Merci de saisir un nombre")
+
+                tournament_info["number_of_rounds"] = number_of_rounds
                 self.manage_tournament(tournament_info, rounds_exist)
             elif choice == "e":
                 tournament_info["description"] = input(

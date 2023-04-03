@@ -356,9 +356,13 @@ class Controller:
                 if result[0] == "back":
                     self.control_update_tournament(tournament)
                 else:
-                    update_score(tournament, result)
-                    print("résultats mis à jour.")
-                    time.sleep(1)
+                    update_status = update_score(tournament, result)
+                    if update_status == "ko-no-player":
+                        print("Joueur inexistant dans la ronde.")
+                        time.sleep(2)
+                    else:
+                        print("Résultats mis à jour.")
+                        time.sleep(1)
                     self.control_input_result(tournament)
             else:
                 # the round is closed no modification can be done

@@ -1,6 +1,5 @@
 """functions used by the controller"""
 import json
-import time
 from datetime import datetime
 from models.models import JSON_PLAY_FILENAME, JSON_TOUR_FILENAME
 
@@ -107,8 +106,9 @@ def update_score(tournament, result):
             tournament.json_save()
             break
     if not player_id_found:
-        print("joueur inexistant!")
-        time.sleep(2)
+        return "ko-no-player"
+    else:
+        return "ok-score-update"
 
 
 def create_round_players_list(round):
