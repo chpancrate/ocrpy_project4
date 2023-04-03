@@ -1,7 +1,6 @@
 """ models classes for chess tournament management software"""
 import random
 import datetime
-import time
 import copy
 import os
 import json
@@ -297,7 +296,7 @@ class Tournament:
                     # each other in the tournament
                     # we try the next one
                     i += 1
-        
+
         if new_round.games == []:
             # the new round is empty because all the possible games
             # have been played we do not use it we

@@ -593,12 +593,16 @@ class Menu:
         table.align = "c"
         table.align["Premier joueur"] = "l"
         table.align["Deuxième joueur"] = "l"
-
         for round in full_rounds_list:
             table.clear_rows()
             print()
-            print("***", round)
-            for game in full_rounds_list[round]:
+            round_data = full_rounds_list[round]
+            if round_data["status"] == "opened":
+                status = "ouverte"
+            else:
+                status = "close"
+            print("***", round, "   ", status)
+            for game in round_data["players_list"]:
                 player1 = (
                     game["player1_id"]
                     + " "
@@ -1010,11 +1014,16 @@ class Report:
             for round in full_rounds_list:
                 table.clear_rows()
                 report_file.write("\n")
-                line = "*** " + round + " ***\n"
+                round_data = full_rounds_list[round]
+                if round_data["status"] == "opened":
+                    status = "ouverte"
+                else:
+                    status = "close"
+                line = "*** " + round + "   " + status + " ***\n"
                 report_file.write(line)
                 report_file.write("\n")
 
-                for game in full_rounds_list[round]:
+                for game in round_data["players_list"]:
                     player1 = (
                         game["player1_id"]
                         + " "

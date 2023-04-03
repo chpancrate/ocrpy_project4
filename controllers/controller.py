@@ -371,10 +371,17 @@ class Controller:
         full_rounds_list = {}
         for round in tournament.rounds:
             round_players_list = create_round_players_list(round)
-            round_data = {round.name: round_players_list}
+            round_data = {}
+            if round.end_date is None:
+                status = "opened"
+            else:
+                status = "closed"
+            round_data[round.name] = {
+                "status": status,
+                "players_list": round_players_list,
+            }
             full_rounds_list.update(round_data)
 
-        # print(full_rounds_list)
         tournament_info = build_tournament_info(tournament)
         self.menu.display_rounds(tournament_info, full_rounds_list)
         self.control_update_tournament(tournament)
@@ -503,7 +510,15 @@ class Controller:
                 full_rounds_list = {}
                 for round in tournament.rounds:
                     round_players_list = create_round_players_list(round)
-                    round_data = {round.name: round_players_list}
+                    round_data = {}
+                    if round.end_date is None:
+                        status = "opened"
+                    else:
+                        status = "closed"
+                    round_data[round.name] = {
+                        "status": status,
+                        "players_list": round_players_list,
+                    }
                     full_rounds_list.update(round_data)
 
                 self.report.tournament_rounds(
